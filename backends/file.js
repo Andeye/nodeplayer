@@ -29,6 +29,7 @@ fileBackend.cache = function(songID, callback, errCallback) {
 fileBackend.search = function(terms, callback, errCallback) {
     db.collection('songs').find({ $text: { $search: terms} }).toArray(
         function (err, items) {
+            // Also filter away special chars? (Remix) ?= Remix åäö日本穂?
             var termsArr = terms.split(" ");
             termsArr.forEach(function(e, i, arr) {arr[i] = e.toLowerCase()});
             for (var i in items) {
@@ -115,6 +116,8 @@ fileBackend.init = function(_config, callback) {
     console.log("fileBackend.init");
     config = _config;
 
+    // Adds text index to database for title, artist and album fields
+    // TODO: better handling and error checking
     var cb = function(arg1, arg2) {console.log(arg1);console.log(arg2)}
     db.collection('songs').ensureIndex({ title: "text", artist: "text", album: "text" }, cb);
 
@@ -122,6 +125,10 @@ fileBackend.init = function(_config, callback) {
         followLinks: false
     };
 
+    // Walk the filesystem and scan files
+    /* TODO: smarter decision on what to probe. Could be limitted to only files
+     * matching the prefix and also not reprobing files already in the database.
+     */
     var startTime = new Date();
     walker = walk.walk(medialibraryPath, options);
     var scanned = 0;
@@ -134,6 +141,7 @@ fileBackend.init = function(_config, callback) {
         next();
     });
     walker.on("end", function() {
+        // Wait until all probes are ready
         var scanResultInterval = setInterval(function() {
             if (toProbe == 0) {
                 console.log("Scanned files: " + scanned);
