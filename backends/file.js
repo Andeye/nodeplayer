@@ -41,8 +41,8 @@ fileBackend.search = function(terms, callback, errCallback) {
                 if (items[i].album.split)
                     words = words.concat(items[i].album.split(" "));
                 words.forEach(function(e, i, arr) {arr[i] = e.toLowerCase()});
-                for (var ii in termsArr) {
-                    if (words.indexOf(termsArr[ii]) >= 0) {
+                for (var ii in words) {
+                    if (termsArr.indexOf(words[ii]) >= 0) {
                         items[i].score++;
                     }
                 }
