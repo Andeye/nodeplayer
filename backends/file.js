@@ -29,6 +29,27 @@ fileBackend.cache = function(songID, callback, errCallback) {
 fileBackend.search = function(terms, callback, errCallback) {
     db.collection('songs').find({ $text: { $search: terms} }).toArray(
         function (err, items) {
+            var termsArr = terms.split(" ");
+            termsArr.forEach(function(e, i, arr) {arr[i] = e.toLowerCase()});
+            for (var i in items) {
+                items[i].score = 0;
+                var words = [];
+                if (items[i].title.split)
+                    words = words.concat(items[i].title.split(" "));
+                if (items[i].artist.split)
+                    words = words.concat(items[i].artist.split(" "));
+                if (items[i].album.split)
+                    words = words.concat(items[i].album.split(" "));
+                words.forEach(function(e, i, arr) {arr[i] = e.toLowerCase()});
+                for (var ii in termsArr) {
+                    if (words.indexOf(termsArr[ii]) >= 0) {
+                        items[i].score++;
+                    }
+                }
+            }
+            items.sort(function(a, b) {
+                return b.score - a.score; // sort by score
+            })
             var songs = [];
             for (var song in items) {
                 songs.push({
@@ -39,6 +60,7 @@ fileBackend.search = function(terms, callback, errCallback) {
                     id: items[song]._id,
                     backend: 'file'
                 });
+                if (songs.length > 10) break;
             }
             // console.log(songs);
             callback(songs);
