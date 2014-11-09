@@ -2,8 +2,7 @@ var send = require('send');
 var walk = require('walk');
 var probe = require('node-ffprobe');
 var path = require('path');
-var mongo = 'mongodb://localhost:27017/fileservice';
-var db = require('mongoskin').db(mongo, {native_parser:true, safe:true});
+var db;
 var url = require('url');
 
 var fileBackend = {};
@@ -11,7 +10,7 @@ var fileBackend = {};
 var config;
 var walker;
 
-var medialibraryPath = "./media";
+var medialibraryPath;
 
 
 var fs = require('fs');
@@ -116,6 +115,10 @@ fileBackend.init = function(_config, callback) {
     console.log("fileBackend.init");
     config = _config;
 
+    db = require('mongoskin').db(config.mongo, {native_parser:true, safe:true});
+
+    medialibraryPath = config.mediaLibraryPath;
+
     // Adds text index to database for title, artist and album fields
     // TODO: better handling and error checking
     var cb = function(arg1, arg2) {console.log(arg1);console.log(arg2)}
@@ -130,6 +133,7 @@ fileBackend.init = function(_config, callback) {
      * matching the prefix and also not reprobing files already in the database.
      */
     var startTime = new Date();
+    console.log("Scanning directory: " + medialibraryPath);
     walker = walk.walk(medialibraryPath, options);
     var scanned = 0;
     walker.on("file", function (root, fileStats, next) {
@@ -149,7 +153,7 @@ fileBackend.init = function(_config, callback) {
                 console.log("Done in: " + Math.round((new Date() - startTime) / 1000) + " seconds");
                 clearInterval(scanResultInterval);
             }
-        }, 100);
+        }, 200);
     });
 };
 fileBackend.middleware = function(req, res, next) {
